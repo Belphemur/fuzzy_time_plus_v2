@@ -182,7 +182,7 @@ void updateLayer(TextLine *animating_line, int line) {
 void update_watch(PebbleTickEvent* event) {
   //Let's get the new time and date
   PblTm* t = event->tick_time;
-  string_format_time(str_bottombar, sizeof(str_bottombar), " %H:%M.%S | Day %j", t);
+  string_format_time(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j", t);
   
   //Let's update the top and bottom bar anyway - **to optimize later to only update top bar every new day.
   text_layer_set_text(&bottombarLayer, str_bottombar);
@@ -208,8 +208,8 @@ void update_watch(PebbleTickEvent* event) {
     set_am_style();
   }
   */
-  if((event->units_changed & MINUTE_UNIT) && (!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1)) {
-	  fuzzy_time(t->tm_hour, t->tm_min, new_time.line1, new_time.line2, new_time.line3);
+  if(!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1) {
+	fuzzy_time(t->tm_hour, t->tm_min, new_time.line1, new_time.line2, new_time.line3);
 	   //update hour only if changed
 	if(strcmp(new_time.line1,cur_time.line1) != 0){
 		updateLayer(&line1, 1);
@@ -362,7 +362,7 @@ void handle_init_app(AppContextRef app_ctx) {
 }
 
 // Called once per minute
-void handle_second_tick(AppContextRef ctx, PebbleTickEvent *t) {
+void handle_minute_tick(AppContextRef ctx, PebbleTickEvent *t) {
   (void)ctx;
 
   if (busy_animating_out || busy_animating_in) return;
@@ -379,8 +379,8 @@ void pbl_main(void *params) {
 
     // Handle time updates
     .tick_info = {
-      .tick_handler = &handle_second_tick,
-      .tick_units = SECOND_UNIT
+      .tick_handler = &handle_minute_tick,
+      .tick_units = MINUTE_UNIT
     }
 
   };
