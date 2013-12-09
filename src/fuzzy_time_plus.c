@@ -5,26 +5,18 @@
   Removed: Hour background inverts depending on AM or PM
  */
 
-#include "pebble_os.h"
-#include "pebble_app.h"
-#include "pebble_fonts.h"
-#include "english_time.h"
+#include <pebble.h>
+#include <english_time.h>
 
-#define MY_UUID { 0x25, 0x7A, 0x25, 0xC6, 0x3F, 0xE2, 0x44, 0xD8, 0xA2, 0x35, 0xC2, 0x07, 0x15, 0x7C, 0xF1, 0x41 }
-PBL_APP_INFO(MY_UUID,
-             "Fuzzy Time +", "atpeaz.com",
-             2, 1, /* App version */
-             RESOURCE_ID_IMAGE_MENU_ICON,
-             APP_INFO_WATCH_FACE);
 #define ANIMATION_DURATION 800
 #define LINE_BUFFER_SIZE 50
 #define WINDOW_NAME "fuzzy_time_plus"
 
-Window window;
+Window *window;
 
 typedef struct {
-  TextLayer layer[2];
-  PropertyAnimation layer_animation[2];
+  TextLayer *layer[2];
+  PropertyAnimation *layer_animation[2];
 } TextLine;
 
 typedef struct {
@@ -33,9 +25,9 @@ typedef struct {
   char line3[LINE_BUFFER_SIZE];
 } TheTime;
 
-TextLayer topbarLayer;
-TextLayer bottombarLayer;
-//TextLayer line3_bg;
+TextLayer *topbarLayer;
+TextLayer *bottombarLayer;
+
 TextLine line1;
 TextLine line2;
 TextLine line3;
@@ -64,96 +56,36 @@ void animationInStoppedHandler(struct Animation *animation, bool finished, void 
 void animationOutStoppedHandler(struct Animation *animation, bool finished, void *context) {
   //reset out layer to x=144
   TextLayer *outside = (TextLayer *)context;
-  GRect rect = layer_get_frame(&outside->layer);
+  GRect rect = layer_get_frame(text_layer_get_layer(outside));
   rect.origin.x = 144;
-  layer_set_frame(&outside->layer, rect);
+  layer_set_frame(text_layer_get_layer(outside), rect);
 
   busy_animating_out = false;
 }
 
-/*
-void set_am_style(void) {
-  text_layer_set_text_color(&line3.layer[0], GColorBlack);
-  text_layer_set_background_color(&line3.layer[0], GColorWhite);
-  text_layer_set_text_color(&line3.layer[1], GColorBlack);
-  text_layer_set_background_color(&line3.layer[1], GColorWhite);
-  text_layer_set_background_color(&line3_bg, GColorWhite);
-}
-
-void set_pm_style(void) {
-  text_layer_set_text_color(&line3.layer[0], GColorWhite);
-  text_layer_set_background_color(&line3.layer[0], GColorClear);
-  text_layer_set_text_color(&line3.layer[1], GColorWhite);
-  text_layer_set_background_color(&line3.layer[1], GColorClear);
-  text_layer_set_background_color(&line3_bg, GColorClear);
-}
-
-void set_line2_am(void) {
-  GRect rect = layer_get_frame(&line2.layer[0].layer);
-  if(rect.origin.x == 0) {
-    text_layer_set_text_color(&line2.layer[1], GColorBlack);
-    text_layer_set_background_color(&line2.layer[1], GColorWhite);  
-    text_layer_set_font(&line2.layer[1], text_font);
-  }
-  else {
-    text_layer_set_text_color(&line2.layer[0], GColorBlack);
-    text_layer_set_background_color(&line2.layer[0], GColorWhite);  
-    text_layer_set_font(&line2.layer[0], text_font);
-  }
-}
-
-void set_line2_pm(void) {
-  GRect rect = layer_get_frame(&line2.layer[0].layer);
-  if(rect.origin.x == 0) {
-    //text_layer_set_text_color(&line2.layer[1], GColorWhite);
-    //text_layer_set_background_color(&line2.layer[1], GColorClear);  
-    text_layer_set_font(&line2.layer[1], text_font);
-  }
-  else {
-    //text_layer_set_text_color(&line2.layer[1], GColorWhite);
-    //text_layer_set_background_color(&line2.layer[1], GColorClear);  
-    text_layer_set_font(&line2.layer[0], text_font);  
-  }
-}
-
-void reset_line2(void) {
-//  GRect rect = layer_get_frame(&line2.layer[0].layer);
-//  if(rect.origin.x == 0) {
-    text_layer_set_text_color(&line2.layer[1], GColorWhite);
-    text_layer_set_background_color(&line2.layer[1], GColorBlack);  
-    text_layer_set_font(&line2.layer[1], text_font_light);
-//  }
-//  else {
-    text_layer_set_text_color(&line2.layer[0], GColorWhite);
-    text_layer_set_background_color(&line2.layer[0], GColorBlack);  
-    text_layer_set_font(&line2.layer[0], text_font_light);
-//  }  
-}
-*/
-
 void updateLayer(TextLine *animating_line, int line) {
   
   TextLayer *inside, *outside;
-  GRect rect = layer_get_frame(&animating_line->layer[0].layer);
+  GRect rect = layer_get_frame(text_layer_get_layer(animating_line->layer[0]));
 
-  inside = (rect.origin.x == 0) ? &animating_line->layer[0] : &animating_line->layer[1];
-  outside = (inside == &animating_line->layer[0]) ? &animating_line->layer[1] : &animating_line->layer[0];
+  inside = (rect.origin.x == 0) ? animating_line->layer[0] : animating_line->layer[1];
+  outside = (inside == animating_line->layer[0]) ? animating_line->layer[1] : animating_line->layer[0];
 
-  GRect in_rect = layer_get_frame(&outside->layer);
-  GRect out_rect = layer_get_frame(&inside->layer);
+  GRect in_rect = layer_get_frame(text_layer_get_layer(outside));
+  GRect out_rect = layer_get_frame(text_layer_get_layer(inside));
 
   in_rect.origin.x -= 144;
   out_rect.origin.x -= 144;
 
  //animate out current layer
   busy_animating_out = true;
-  property_animation_init_layer_frame(&animating_line->layer_animation[1], &inside->layer, NULL, &out_rect);
-  animation_set_duration(&animating_line->layer_animation[1].animation, ANIMATION_DURATION);
-  animation_set_curve(&animating_line->layer_animation[1].animation, AnimationCurveEaseOut);
-  animation_set_handlers(&animating_line->layer_animation[1].animation, (AnimationHandlers) {
+  animating_line->layer_animation[1] = property_animation_create_layer_frame(text_layer_get_layer(inside), NULL, &out_rect);
+  animation_set_duration(&animating_line->layer_animation[1]->animation, ANIMATION_DURATION);
+  animation_set_curve(&animating_line->layer_animation[1]->animation, AnimationCurveEaseOut);
+  animation_set_handlers(&animating_line->layer_animation[1]->animation, (AnimationHandlers) {
     .stopped = (AnimationStoppedHandler)animationOutStoppedHandler
   }, (void *)inside);
-  animation_schedule(&animating_line->layer_animation[1].animation);
+  animation_schedule(&animating_line->layer_animation[1]->animation);
 
   if (line==1){
     text_layer_set_text(outside, new_time.line1);
@@ -170,45 +102,23 @@ void updateLayer(TextLine *animating_line, int line) {
   
   //animate in new layer
   busy_animating_in = true;
-  property_animation_init_layer_frame(&animating_line->layer_animation[0], &outside->layer, NULL, &in_rect);
-  animation_set_duration(&animating_line->layer_animation[0].animation, ANIMATION_DURATION);
-  animation_set_curve(&animating_line->layer_animation[0].animation, AnimationCurveEaseOut);
-  animation_set_handlers(&animating_line->layer_animation[0].animation, (AnimationHandlers) {
+  animating_line->layer_animation[0] = property_animation_create_layer_frame(text_layer_get_layer(outside), NULL, &in_rect);
+  animation_set_duration(&animating_line->layer_animation[0]->animation, ANIMATION_DURATION);
+  animation_set_curve(&animating_line->layer_animation[0]->animation, AnimationCurveEaseOut);
+  animation_set_handlers(&animating_line->layer_animation[0]->animation, (AnimationHandlers) {
     .stopped = (AnimationStoppedHandler)animationInStoppedHandler
   }, (void *)outside);
-  animation_schedule(&animating_line->layer_animation[0].animation);
+  animation_schedule(&animating_line->layer_animation[0]->animation);
 }
 
-void update_watch(PebbleTickEvent* event) {
+void update_watch(struct tm *t, TimeUnits units_changed) {
   //Let's get the new time and date
-  PblTm* t = event->tick_time;
-  string_format_time(str_bottombar, sizeof(str_bottombar), " %H:%M.%S | Day %j", t);
+  strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j", t);
   
-  //Let's update the top and bottom bar anyway - **to optimize later to only update top bar every new day.
-  text_layer_set_text(&bottombarLayer, str_bottombar);
+  //Let's update the top and bottom bar anyway
+  text_layer_set_text(bottombarLayer, str_bottombar);
   
-  /*
-  if(t->tm_min == 0){
-    if(t->tm_hour >= 12){
-      set_line2_pm();
-    }
-    else {
-      set_line2_am();
-    }
-  }
-  
-  if(t->tm_min > 1){
-    reset_line2();
-  }
-    
-  if(t->tm_hour >= 12){
-    set_pm_style();
-  }
-  else {
-    set_am_style();
-  }
-  */
-  if((event->units_changed & MINUTE_UNIT) && (!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1)) {
+  if((units_changed & MINUTE_UNIT) && (!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1)) {
 	  fuzzy_time(t->tm_hour, t->tm_min, new_time.line1, new_time.line2, new_time.line3);
 	   //update hour only if changed
 	if(strcmp(new_time.line1,cur_time.line1) != 0){
@@ -222,64 +132,47 @@ void update_watch(PebbleTickEvent* event) {
 	if(strcmp(new_time.line3,cur_time.line3) != 0){
 		updateLayer(&line3, 3);
 	}
-    if(event->units_changed & DAY_UNIT) {
-	  string_format_time(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
-	  text_layer_set_text(&topbarLayer, str_topbar);
+    if(units_changed & DAY_UNIT) {
+	  strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
+	  text_layer_set_text(topbarLayer, str_topbar);
 	}
 
   }
  }
 
-void init_watch(PblTm* t) {
+void init_watch(struct tm* t) {
   fuzzy_time(t->tm_hour, t->tm_min, new_time.line1, new_time.line2, new_time.line3);
-  string_format_time(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
-  string_format_time(str_bottombar, sizeof(str_bottombar), " %H:%M.%S | Day %j", t);
+  strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
+  strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j", t);
   
-  text_layer_set_text(&topbarLayer, str_topbar);
-  text_layer_set_text(&bottombarLayer, str_bottombar);
+  text_layer_set_text(topbarLayer, str_topbar);
+  text_layer_set_text(bottombarLayer, str_bottombar);
 
   strcpy(cur_time.line1, new_time.line1);
   strcpy(cur_time.line2, new_time.line2);
   strcpy(cur_time.line3, new_time.line3);
 
-  /*
-  if(t->tm_min == 0){
-    if(t->tm_hour >= 12){
-      text_layer_set_font(&line2.layer[0], text_font);
-    }
-    else {
-      text_layer_set_text_color(&line2.layer[0], GColorBlack);
-      text_layer_set_background_color(&line2.layer[0], GColorWhite);  
-      text_layer_set_font(&line2.layer[0], text_font);
-      text_layer_set_text_color(&line2.layer[1], GColorWhite);
-      text_layer_set_background_color(&line2.layer[1], GColorBlack);  
-      text_layer_set_font(&line2.layer[1], text_font_light);
-    }
-  }
-  
-  if(t->tm_hour >= 12){
-    set_pm_style();
-  }
-  else {
-    set_am_style();
-  }
-  */
-
-  text_layer_set_text(&line1.layer[0], cur_time.line1);
-  text_layer_set_text(&line2.layer[0], cur_time.line2);
-  text_layer_set_text(&line3.layer[0], cur_time.line3);
+ 
+  text_layer_set_text(line1.layer[0], cur_time.line1);
+  text_layer_set_text(line2.layer[0], cur_time.line2);
+  text_layer_set_text(line3.layer[0], cur_time.line3);
 }
 
+static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
+  if (busy_animating_out || busy_animating_in) return;
+
+  update_watch(tick_time, units_changed);  	
+}
 
 // Handle the start-up of the app
-void handle_init_app(AppContextRef app_ctx) {
+void handle_init_app() {
 
   // Create our app's base window
-  window_init(&window, WINDOW_NAME);
-  window_stack_push(&window, true);
-  window_set_background_color(&window, GColorBlack);
-
-  resource_init_current_app(&APP_RESOURCES);
+  window = window_create();
+  window_stack_push(window, true);
+  window_set_background_color(window, GColorBlack);
+  
+  Layer *window_layer = window_get_root_layer(window);
 
   // Init the text layers used to show the time
 
@@ -289,100 +182,96 @@ void handle_init_app(AppContextRef app_ctx) {
   bar_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   
   // line1
-  text_layer_init(&line1.layer[0], GRect(0, line1_y, 144, 42));
-  text_layer_set_text_color(&line1.layer[0], GColorWhite);
-  text_layer_set_background_color(&line1.layer[0], GColorClear);
-  text_layer_set_font(&line1.layer[0], text_font_light);
-  text_layer_set_text_alignment(&line1.layer[0], GTextAlignmentLeft);
+  line1.layer[0] = text_layer_create(GRect(0, line1_y, 144, 42));
+  text_layer_set_text_color(line1.layer[0], GColorWhite);
+  text_layer_set_background_color(line1.layer[0], GColorClear);
+  text_layer_set_font(line1.layer[0], text_font_light);
+  text_layer_set_text_alignment(line1.layer[0], GTextAlignmentLeft);
   
-  text_layer_init(&line1.layer[1], GRect(144, line1_y, 144, 42));
-  text_layer_set_text_color(&line1.layer[1], GColorWhite);
-  text_layer_set_background_color(&line1.layer[1], GColorClear);
-  text_layer_set_font(&line1.layer[1], text_font_light);
-  text_layer_set_text_alignment(&line1.layer[1], GTextAlignmentLeft);
+  line1.layer[1] = text_layer_create(GRect(144, line1_y, 144, 42));
+  text_layer_set_text_color(line1.layer[1], GColorWhite);
+  text_layer_set_background_color(line1.layer[1], GColorClear);
+  text_layer_set_font(line1.layer[1], text_font_light);
+  text_layer_set_text_alignment(line1.layer[1], GTextAlignmentLeft);
 
   // line2
-  text_layer_init(&line2.layer[0], GRect(0, line2_y, 144, 42));
-  text_layer_set_text_color(&line2.layer[0], GColorWhite);
-  text_layer_set_background_color(&line2.layer[0], GColorClear);
-  text_layer_set_font(&line2.layer[0], text_font_light);
-  text_layer_set_text_alignment(&line2.layer[0], GTextAlignmentLeft);
+  line2.layer[0] = text_layer_create(GRect(0, line2_y, 144, 42));
+  text_layer_set_text_color(line2.layer[0], GColorWhite);
+  text_layer_set_background_color(line2.layer[0], GColorClear);
+  text_layer_set_font(line2.layer[0], text_font_light);
+  text_layer_set_text_alignment(line2.layer[0], GTextAlignmentLeft);
 
-  text_layer_init(&line2.layer[1], GRect(144, line2_y, 144, 42));
-  text_layer_set_text_color(&line2.layer[1], GColorWhite);
-  text_layer_set_background_color(&line2.layer[1], GColorClear);
-  text_layer_set_font(&line2.layer[1], text_font_light);
-  text_layer_set_text_alignment(&line2.layer[1], GTextAlignmentLeft);
+  line2.layer[1] = text_layer_create(GRect(144, line2_y, 144, 42));
+  text_layer_set_text_color(line2.layer[1], GColorWhite);
+  text_layer_set_background_color(line2.layer[1], GColorClear);
+  text_layer_set_font(line2.layer[1], text_font_light);
+  text_layer_set_text_alignment(line2.layer[1], GTextAlignmentLeft);
   
   // line3
-  text_layer_init(&line3.layer[0], GRect(0, line3_y, 144, 52));
-  text_layer_set_text_color(&line3.layer[0], GColorWhite);
-  text_layer_set_background_color(&line3.layer[0], GColorClear);
-  text_layer_set_font(&line3.layer[0], text_font);
-  text_layer_set_text_alignment(&line3.layer[0], GTextAlignmentLeft);
+  line3.layer[0] = text_layer_create(GRect(0, line3_y, 144, 52));
+  text_layer_set_text_color(line3.layer[0], GColorWhite);
+  text_layer_set_background_color(line3.layer[0], GColorClear);
+  text_layer_set_font(line3.layer[0], text_font);
+  text_layer_set_text_alignment(line3.layer[0], GTextAlignmentLeft);
 
-  text_layer_init(&line3.layer[1], GRect(144, line3_y, 144, 52));
-  text_layer_set_text_color(&line3.layer[1], GColorWhite);
-  text_layer_set_background_color(&line3.layer[1], GColorClear);
-  text_layer_set_font(&line3.layer[1], text_font);
-  text_layer_set_text_alignment(&line3.layer[1], GTextAlignmentLeft);
+  line3.layer[1] = text_layer_create(GRect(144, line3_y, 144, 52));
+  text_layer_set_text_color(line3.layer[1], GColorWhite);
+  text_layer_set_background_color(line3.layer[1], GColorClear);
+  text_layer_set_font(line3.layer[1], text_font);
+  text_layer_set_text_alignment(line3.layer[1], GTextAlignmentLeft);
 
-  //text_layer_init(&line3_bg, GRect(144, line3_y, 144, 52));
+  //text_layer_init(line3_bg, GRect(144, line3_y, 144, 52));
 
   // top bar
-  text_layer_init(&topbarLayer, GRect(0, 0, 144, 18));
-  text_layer_set_text_color(&topbarLayer, GColorWhite);
-  text_layer_set_background_color(&topbarLayer, GColorClear);
-  text_layer_set_font(&topbarLayer, bar_font);
-  text_layer_set_text_alignment(&topbarLayer, GTextAlignmentCenter);
+  topbarLayer = text_layer_create(GRect(0, 0, 144, 18));
+  text_layer_set_text_color(topbarLayer, GColorWhite);
+  text_layer_set_background_color(topbarLayer, GColorClear);
+  text_layer_set_font(topbarLayer, bar_font);
+  text_layer_set_text_alignment(topbarLayer, GTextAlignmentCenter);
 
-  // bottom bar
-  text_layer_init(&bottombarLayer, GRect(0, 150, 144, 18));
-  text_layer_set_text_color(&bottombarLayer, GColorWhite);
-  text_layer_set_background_color(&bottombarLayer, GColorClear);
-  text_layer_set_font(&bottombarLayer, bar_font);
-  text_layer_set_text_alignment(&bottombarLayer, GTextAlignmentCenter);
+  // bottom bar bottombarLayer
+  bottombarLayer = text_layer_create(GRect(0, 150, 144, 18));
+  text_layer_set_text_color(bottombarLayer, GColorWhite);
+  text_layer_set_background_color(bottombarLayer, GColorClear);
+  text_layer_set_font(bottombarLayer, bar_font);
+  text_layer_set_text_alignment(bottombarLayer, GTextAlignmentCenter);
 
   // Ensures time is displayed immediately (will break if NULL tick event accessed).
   // (This is why it's a good idea to have a separate routine to do the update itself.)
+ 
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  init_watch(t);
 
-  PblTm t;
-  get_time(&t);
-  init_watch(&t);
-
-  //layer_add_child(&window.layer, &line3_bg.layer);
-  layer_add_child(&window.layer, &line3.layer[0].layer);
-  layer_add_child(&window.layer, &line3.layer[1].layer);
-  layer_add_child(&window.layer, &line2.layer[0].layer);
-  layer_add_child(&window.layer, &line2.layer[1].layer); 
-  layer_add_child(&window.layer, &line1.layer[0].layer);
-  layer_add_child(&window.layer, &line1.layer[1].layer);
-  layer_add_child(&window.layer, &bottombarLayer.layer); 
-  layer_add_child(&window.layer, &topbarLayer.layer);
+  //layer_add_child(&window.layer, line3_bg.layer);
+  layer_add_child(window_layer, text_layer_get_layer(line3.layer[0]));
+  layer_add_child(window_layer, text_layer_get_layer(line3.layer[1]));
+  layer_add_child(window_layer, text_layer_get_layer(line2.layer[0]));
+  layer_add_child(window_layer, text_layer_get_layer(line2.layer[1])); 
+  layer_add_child(window_layer, text_layer_get_layer(line1.layer[0]));
+  layer_add_child(window_layer, text_layer_get_layer(line1.layer[1]));
+  layer_add_child(window_layer, text_layer_get_layer(bottombarLayer)); 
+  layer_add_child(window_layer, text_layer_get_layer(topbarLayer));
+  
+  tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
 }
 
-// Called once per minute
-void handle_second_tick(AppContextRef ctx, PebbleTickEvent *t) {
-  (void)ctx;
 
-  if (busy_animating_out || busy_animating_in) return;
-
-  update_watch(t);  
+void destroyTextLineLayers(TextLine *textLine) {
+	text_layer_destroy(textLine->layer[0]);
+	text_layer_destroy(textLine->layer[1]);
 }
 
-// The main event/run loop for our app
-void pbl_main(void *params) {
-  PebbleAppHandlers handlers = {
-
-    // Handle app start
-    .init_handler = &handle_init_app,
-
-    // Handle time updates
-    .tick_info = {
-      .tick_handler = &handle_second_tick,
-      .tick_units = SECOND_UNIT
-    }
-
-  };
-  app_event_loop(params, &handlers);
+void handle_deinit(void) {
+  text_layer_destroy(topbarLayer);
+  text_layer_destroy(bottombarLayer);
+  destroyTextLineLayers(&line1);
+  destroyTextLineLayers(&line2);
+  destroyTextLineLayers(&line3);
+  window_destroy(window);
+}
+int main(void) {
+  handle_init_app();
+  app_event_loop();
+  handle_deinit();
 }
