@@ -30,6 +30,9 @@ TextLine line3;
 
 static char str_topbar[LINE_BUFFER_SIZE];
 static char str_bottombar[LINE_BUFFER_SIZE];
+
+static char battery_text[] = "100%";
+
 static bool busy_animating_in = false;
 static bool busy_animating_out = false;
 const int line1_y = 25;
@@ -95,13 +98,23 @@ void updateLayer(TextLine *animating_line) {
   }, (void *)animating_line);
   animation_schedule(&animating_line->layer_animation[0]->animation);
 }
-
-void update_watch(struct tm *t, TimeUnits units_changed) {
+void updateBottombar(struct tm *t) {
   //Let's get the new time and date
-  strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j", t);
+  strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j | ", t);
   
-  //Let's update the top and bottom bar anyway
+  BatteryChargeState charge_state = battery_state_service_peek();
+  if (charge_state.is_charging) {
+    snprintf(battery_text, sizeof(battery_text), "--%%");
+  } else {
+    snprintf(battery_text, sizeof(battery_text), "%d%% ", charge_state.charge_percent);
+  }
+  
+  strncat(str_bottombar, battery_text, LINE_BUFFER_SIZE - strlen(str_bottombar));
+  //Let's update the bottom bar anyway
   text_layer_set_text(bottombarLayer, str_bottombar);
+}
+void update_watch(struct tm *t, TimeUnits units_changed) {
+ 
   
   if(!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1) {
 	fuzzy_time(t->tm_hour, t->tm_min, line1.new_time, line2.new_time, line3.new_time);
@@ -128,7 +141,8 @@ void update_watch(struct tm *t, TimeUnits units_changed) {
 void init_watch(struct tm* t) {
   fuzzy_time(t->tm_hour, t->tm_min, line1.new_time, line2.new_time, line3.new_time);
   strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
-  strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j", t);
+  
+  updateBottombar(t);
   
   text_layer_set_text(topbarLayer, str_topbar);
   text_layer_set_text(bottombarLayer, str_bottombar);
