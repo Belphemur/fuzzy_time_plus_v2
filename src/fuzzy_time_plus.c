@@ -115,6 +115,7 @@ void updateBottombar(struct tm *t) {
 }
 void update_watch(struct tm *t, TimeUnits units_changed) {
  
+  updateBottombar(t);
   
   if(!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1) {
 	fuzzy_time(t->tm_hour, t->tm_min, line1.new_time, line2.new_time, line3.new_time);
