@@ -17,13 +17,9 @@ Window *window;
 typedef struct {
   TextLayer *layer[2];
   PropertyAnimation *layer_animation[2];
+  char cur_time[LINE_BUFFER_SIZE];
+  char new_time[LINE_BUFFER_SIZE];
 } TextLine;
-
-typedef struct {
-  char line1[LINE_BUFFER_SIZE];
-  char line2[LINE_BUFFER_SIZE];
-  char line3[LINE_BUFFER_SIZE];
-} TheTime;
 
 TextLayer *topbarLayer;
 TextLayer *bottombarLayer;
@@ -31,9 +27,6 @@ TextLayer *bottombarLayer;
 TextLine line1;
 TextLine line2;
 TextLine line3;
-
-static TheTime cur_time;
-static TheTime new_time;
 
 static char str_topbar[LINE_BUFFER_SIZE];
 static char str_bottombar[LINE_BUFFER_SIZE];
@@ -50,7 +43,8 @@ GFont bar_font;
 void animationInStoppedHandler(struct Animation *animation, bool finished, void *context) {
   busy_animating_in = false;
   //reset cur_time
-  cur_time = new_time;
+  TextLine *line = (TextLine *) context;
+  strcpy(line->cur_time, line->new_time);
 }
 
 void animationOutStoppedHandler(struct Animation *animation, bool finished, void *context) {
@@ -63,7 +57,7 @@ void animationOutStoppedHandler(struct Animation *animation, bool finished, void
   busy_animating_out = false;
 }
 
-void updateLayer(TextLine *animating_line, int line) {
+void updateLayer(TextLine *animating_line) {
   
   TextLayer *inside, *outside;
   GRect rect = layer_get_frame(text_layer_get_layer(animating_line->layer[0]));
@@ -87,18 +81,9 @@ void updateLayer(TextLine *animating_line, int line) {
   }, (void *)inside);
   animation_schedule(&animating_line->layer_animation[1]->animation);
 
-  if (line==1){
-    text_layer_set_text(outside, new_time.line1);
-    text_layer_set_text(inside, cur_time.line1);
-  }
-  if (line==2){
-    text_layer_set_text(outside, new_time.line2);
-    text_layer_set_text(inside, cur_time.line2);
-  }
-  if (line==3){
-    text_layer_set_text(outside, new_time.line3);
-    text_layer_set_text(inside, cur_time.line3);
-  }
+  text_layer_set_text(outside, animating_line->new_time);
+  text_layer_set_text(inside, animating_line->cur_time);
+  
   
   //animate in new layer
   busy_animating_in = true;
@@ -107,7 +92,7 @@ void updateLayer(TextLine *animating_line, int line) {
   animation_set_curve(&animating_line->layer_animation[0]->animation, AnimationCurveEaseOut);
   animation_set_handlers(&animating_line->layer_animation[0]->animation, (AnimationHandlers) {
     .stopped = (AnimationStoppedHandler)animationInStoppedHandler
-  }, (void *)outside);
+  }, (void *)animating_line);
   animation_schedule(&animating_line->layer_animation[0]->animation);
 }
 
@@ -118,19 +103,19 @@ void update_watch(struct tm *t, TimeUnits units_changed) {
   //Let's update the top and bottom bar anyway
   text_layer_set_text(bottombarLayer, str_bottombar);
   
-  if((units_changed & MINUTE_UNIT) && (!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1)) {
-	  fuzzy_time(t->tm_hour, t->tm_min, new_time.line1, new_time.line2, new_time.line3);
+  if(!(t->tm_min %5) || t->tm_min == 58 || t->tm_min == 1) {
+	fuzzy_time(t->tm_hour, t->tm_min, line1.new_time, line2.new_time, line3.new_time);
 	   //update hour only if changed
-	if(strcmp(new_time.line1,cur_time.line1) != 0){
-		updateLayer(&line1, 1);
+	if(strcmp(line1.new_time,line1.cur_time) != 0){
+		updateLayer(&line1);
 	}
 	  //update min1 only if changed
-	if(strcmp(new_time.line2,cur_time.line2) != 0){
-		updateLayer(&line2, 2);
+	if(strcmp(line2.new_time,line2.cur_time) != 0){
+		updateLayer(&line2);
 	}
 	  //update min2 only if changed happens on
-	if(strcmp(new_time.line3,cur_time.line3) != 0){
-		updateLayer(&line3, 3);
+	if(strcmp(line3.new_time,line3.cur_time) != 0){
+		updateLayer(&line3);
 	}
     if(units_changed & DAY_UNIT) {
 	  strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
@@ -141,21 +126,21 @@ void update_watch(struct tm *t, TimeUnits units_changed) {
  }
 
 void init_watch(struct tm* t) {
-  fuzzy_time(t->tm_hour, t->tm_min, new_time.line1, new_time.line2, new_time.line3);
+  fuzzy_time(t->tm_hour, t->tm_min, line1.new_time, line2.new_time, line3.new_time);
   strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
   strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j", t);
   
   text_layer_set_text(topbarLayer, str_topbar);
   text_layer_set_text(bottombarLayer, str_bottombar);
 
-  strcpy(cur_time.line1, new_time.line1);
-  strcpy(cur_time.line2, new_time.line2);
-  strcpy(cur_time.line3, new_time.line3);
+  strcpy(line1.cur_time, line1.new_time);
+  strcpy(line2.cur_time, line2.new_time);
+  strcpy(line3.cur_time, line3.new_time);
 
  
-  text_layer_set_text(line1.layer[0], cur_time.line1);
-  text_layer_set_text(line2.layer[0], cur_time.line2);
-  text_layer_set_text(line3.layer[0], cur_time.line3);
+  text_layer_set_text(line1.layer[0], line1.cur_time);
+  text_layer_set_text(line2.layer[0], line2.cur_time);
+  text_layer_set_text(line3.layer[0], line3.cur_time);
 }
 
 static void handle_minute_tick(struct tm *tick_time, TimeUnits units_changed) {
