@@ -1,0 +1,32 @@
+{
+  "uuid": "9fde18c9-6a9d-4163-af67-e6f47f8b2a57",
+  "shortName": "Fuzzy Time +",
+  "longName": "Fuzzy Time + v2",
+  "companyName": "Antoine Aflalo",
+  "versionCode": 2,
+  "versionLabel": "2.5.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {},
+  "resources": {
+    "media": [
+      {
+        "menuIcon": true,
+        "type": "png",
+        "name": "IMAGE_MENU_ICON",
+        "file": "images/menu_icon.png"
+      },
+      {
+        "name": "FONT_TWCENMT_36_BOLD",
+        "type": "font",
+        "file": "fonts/twcenmt_bold.ttf"
+      },
+      {
+        "name": "FONT_TWCENMT_39",
+        "type": "font",
+        "file": "fonts/twcenmt_light.ttf"
+      }
+    ]
+  }
+}
