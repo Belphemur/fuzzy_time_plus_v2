@@ -26,6 +26,11 @@
         "name": "FONT_TWCENMT_39",
         "type": "font",
         "file": "fonts/twcenmt_light.ttf"
+      },
+      {
+        "name": "FONT_BT_16",
+        "type": "font",
+        "file": "fonts/bt.ttf"
       }
     ]
   }

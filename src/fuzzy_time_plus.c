@@ -23,6 +23,7 @@ typedef struct {
 
 TextLayer *topbarLayer;
 TextLayer *bottombarLayer;
+TextLayer *bluetoothLayer;
 
 TextLine line1;
 TextLine line2;
@@ -42,7 +43,18 @@ const int line3_y = 93;
 GFont text_font;
 GFont text_font_light;
 GFont bar_font;
+GFont bt_font;
 
+void bluetooth_connection_callback(bool connected) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "bluetooth connected=%d", (int) connected);
+  if(connected) {
+	  text_layer_set_text(bluetoothLayer, "\ue602");
+  }
+  else {
+	  text_layer_set_text(bluetoothLayer, "\ue603");
+  }       
+}
+    
 void animationInStoppedHandler(struct Animation *animation, bool finished, void *context) {
   busy_animating_in = false;
   //reset cur_time
@@ -98,6 +110,12 @@ void updateLayer(TextLine *animating_line) {
   }, (void *)animating_line);
   animation_schedule(&animating_line->layer_animation[0]->animation);
 }
+
+void updateTopbar(struct tm *t) {
+	 strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
+	 text_layer_set_text(topbarLayer, str_topbar);
+}
+
 void updateBottombar(struct tm *t) {
   //Let's get the new time and date
   strftime(str_bottombar, sizeof(str_bottombar), " %H:%M | Day %j | ", t);
@@ -132,8 +150,7 @@ void update_watch(struct tm *t, TimeUnits units_changed) {
 		updateLayer(&line3);
 	}
     if(units_changed & DAY_UNIT) {
-	  strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
-	  text_layer_set_text(topbarLayer, str_topbar);
+		updateTopbar(t);
 	}
 
   }
@@ -141,9 +158,10 @@ void update_watch(struct tm *t, TimeUnits units_changed) {
 
 void init_watch(struct tm* t) {
   fuzzy_time(t->tm_hour, t->tm_min, line1.new_time, line2.new_time, line3.new_time);
-  strftime(str_topbar, sizeof(str_topbar), "%A | %e %b", t);
   
+  updateTopbar(t);  
   updateBottombar(t);
+  bluetooth_connection_callback(bluetooth_connection_service_peek());
   
   text_layer_set_text(topbarLayer, str_topbar);
   text_layer_set_text(bottombarLayer, str_bottombar);
@@ -180,6 +198,7 @@ void handle_init_app() {
   text_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TWCENMT_36_BOLD));
   text_font_light = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TWCENMT_39));
   bar_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  bt_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_BT_16));
   
   // line1
   line1.layer[0] = text_layer_create(GRect(0, line1_y, 144, 42));
@@ -228,6 +247,13 @@ void handle_init_app() {
   text_layer_set_background_color(topbarLayer, GColorClear);
   text_layer_set_font(topbarLayer, bar_font);
   text_layer_set_text_alignment(topbarLayer, GTextAlignmentCenter);
+  
+  //bluetooth connection
+  bluetoothLayer = text_layer_create(GRect(0, 0, 144, 18));
+  text_layer_set_text_color(bluetoothLayer, GColorWhite);
+  text_layer_set_background_color(bluetoothLayer, GColorClear);
+  text_layer_set_font(bluetoothLayer, bt_font);
+  text_layer_set_text_alignment(bluetoothLayer, GTextAlignmentRight);
 
   // bottom bar bottombarLayer
   bottombarLayer = text_layer_create(GRect(0, 150, 144, 18));
@@ -252,8 +278,10 @@ void handle_init_app() {
   layer_add_child(window_layer, text_layer_get_layer(line1.layer[1]));
   layer_add_child(window_layer, text_layer_get_layer(bottombarLayer)); 
   layer_add_child(window_layer, text_layer_get_layer(topbarLayer));
+  layer_add_child(window_layer, text_layer_get_layer(bluetoothLayer));
   
   tick_timer_service_subscribe(MINUTE_UNIT, handle_minute_tick);
+  bluetooth_connection_service_subscribe(bluetooth_connection_callback);
 }
 
 
@@ -265,6 +293,7 @@ void destroyTextLineLayers(TextLine *textLine) {
 void handle_deinit(void) {
   text_layer_destroy(topbarLayer);
   text_layer_destroy(bottombarLayer);
+  text_layer_destroy(bluetoothLayer);
   destroyTextLineLayers(&line1);
   destroyTextLineLayers(&line2);
   destroyTextLineLayers(&line3);
