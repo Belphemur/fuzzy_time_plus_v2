@@ -12,7 +12,7 @@
 #define LINE_BUFFER_SIZE 50
 #define WINDOW_NAME "fuzzy_time_plus"
 
-Window *window;
+static Window *window;
 
 typedef struct {
   TextLayer *layer[2];
@@ -21,13 +21,13 @@ typedef struct {
   char new_time[LINE_BUFFER_SIZE];
 } TextLine;
 
-TextLayer *topbarLayer;
-TextLayer *bottombarLayer;
-TextLayer *bluetoothLayer;
+static TextLayer *topbarLayer;
+static TextLayer *bottombarLayer;
+static TextLayer *bluetoothLayer;
 
-TextLine line1;
-TextLine line2;
-TextLine line3;
+static TextLine line1;
+static TextLine line2;
+static TextLine line3;
 
 static char str_topbar[LINE_BUFFER_SIZE];
 static char str_bottombar[LINE_BUFFER_SIZE];
@@ -36,14 +36,14 @@ static char battery_text[] = "100%";
 
 static bool busy_animating_in = false;
 static bool busy_animating_out = false;
-const int line1_y = 25;
-const int line2_y = 58;
-const int line3_y = 93;
+static const int line1_y = 20;
+static const int line2_y = 56;
+static const int line3_y = 93;
 
-GFont text_font;
-GFont text_font_light;
-GFont bar_font;
-GFont bt_font;
+static GFont text_font;
+static GFont text_font_light;
+static GFont bar_font;
+static GFont bt_font;
 
 void bluetooth_connection_callback(bool connected) {
   APP_LOG(APP_LOG_LEVEL_INFO, "bluetooth connected=%d", (int) connected);
@@ -196,7 +196,7 @@ void handle_init_app() {
 
   // Set the fonts
   text_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TWCENMT_36_BOLD));
-  text_font_light = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TWCENMT_39));
+  text_font_light = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_BELLEROSE_39));
   bar_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   bt_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_BT_16));
   
@@ -297,6 +297,9 @@ void handle_deinit(void) {
   destroyTextLineLayers(&line1);
   destroyTextLineLayers(&line2);
   destroyTextLineLayers(&line3);
+  fonts_unload_custom_font(text_font);
+  fonts_unload_custom_font(text_font_light);
+  fonts_unload_custom_font(bt_font);
   window_destroy(window);
 }
 int main(void) {
