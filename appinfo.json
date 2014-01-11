@@ -4,7 +4,7 @@
   "longName": "Fuzzy Time + v2",
   "companyName": "Antoine Aflalo",
   "versionCode": 3,
-  "versionLabel": "2.5.1",
+  "versionLabel": "2.6.0",
   "watchapp": {
     "watchface": true
   },
@@ -18,14 +18,14 @@
         "file": "images/menu_icon.png"
       },
       {
-        "name": "FONT_TWCENMT_36_BOLD",
+        "name": "FONT_HOUR_20",
         "type": "font",
-        "file": "fonts/twcenmt_bold.ttf"
+        "file": "fonts/Lemondrop.ttf"
       },
       {
-        "name": "FONT_BELLEROSE_39",
+        "name": "FONT_MINUTE_36",
         "type": "font",
-        "file": "fonts/Bellerose.ttf"
+        "file": "fonts/antique_book_cover.otf"
       },
       {
         "name": "FONT_BT_16",

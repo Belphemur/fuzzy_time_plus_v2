@@ -37,8 +37,8 @@ static char battery_text[] = "100%";
 static bool busy_animating_in = false;
 static bool busy_animating_out = false;
 static const int line1_y = 20;
-static const int line2_y = 56;
-static const int line3_y = 93;
+static const int line2_y = 58;
+static const int line3_y = 110;
 
 static GFont text_font;
 static GFont text_font_light;
@@ -195,32 +195,32 @@ void handle_init_app() {
   // Init the text layers used to show the time
 
   // Set the fonts
-  text_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_TWCENMT_36_BOLD));
-  text_font_light = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_BELLEROSE_39));
+  text_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_HOUR_20));
+  text_font_light = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_MINUTE_36));
   bar_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   bt_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_BT_16));
   
   // line1
-  line1.layer[0] = text_layer_create(GRect(0, line1_y, 144, 42));
+  line1.layer[0] = text_layer_create(GRect(0, line1_y, 144, 50));
   text_layer_set_text_color(line1.layer[0], GColorWhite);
   text_layer_set_background_color(line1.layer[0], GColorClear);
   text_layer_set_font(line1.layer[0], text_font_light);
   text_layer_set_text_alignment(line1.layer[0], GTextAlignmentLeft);
   
-  line1.layer[1] = text_layer_create(GRect(144, line1_y, 144, 42));
+  line1.layer[1] = text_layer_create(GRect(144, line1_y, 144, 50));
   text_layer_set_text_color(line1.layer[1], GColorWhite);
   text_layer_set_background_color(line1.layer[1], GColorClear);
   text_layer_set_font(line1.layer[1], text_font_light);
   text_layer_set_text_alignment(line1.layer[1], GTextAlignmentLeft);
 
   // line2
-  line2.layer[0] = text_layer_create(GRect(0, line2_y, 144, 42));
+  line2.layer[0] = text_layer_create(GRect(0, line2_y, 144, 50));
   text_layer_set_text_color(line2.layer[0], GColorWhite);
   text_layer_set_background_color(line2.layer[0], GColorClear);
   text_layer_set_font(line2.layer[0], text_font_light);
   text_layer_set_text_alignment(line2.layer[0], GTextAlignmentLeft);
 
-  line2.layer[1] = text_layer_create(GRect(144, line2_y, 144, 42));
+  line2.layer[1] = text_layer_create(GRect(144, line2_y, 144, 50));
   text_layer_set_text_color(line2.layer[1], GColorWhite);
   text_layer_set_background_color(line2.layer[1], GColorClear);
   text_layer_set_font(line2.layer[1], text_font_light);
